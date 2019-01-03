@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Swashbuckle.AspNetCore.Swagger;
 
 namespace EmailServerWithIdentity
 {
@@ -17,7 +18,14 @@ namespace EmailServerWithIdentity
         {
             services.AddMvc();
 
-            services.AddSwaggerGen
+            services.AddSwaggerGen(options => 
+            {
+                options.SwaggerDoc("v1", new Info
+                {
+                    Title = "MyApi",
+                    Version = "v1"
+                });
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -28,10 +36,13 @@ namespace EmailServerWithIdentity
                 app.UseDeveloperExceptionPage();
             }
 
-            app.Run(async (context) =>
+            app.UseSwagger();
+            app.UseSwaggerUI(setup =>
             {
-                await context.Response.WriteAsync("Hello World!");
+                setup.SwaggerEndpoint("/swagger/v1/swagger.json", "My API v1");
             });
+
+            app.UseMvc();
         }
     }
 }
