@@ -13,53 +13,59 @@
 
 <body>
     <div>
-        <h3>Site about books!</h3>
-        <hr />
-    </div>
 
-    <div>
-        <form onsubmit="LogIn()" id="logInForm">
-            <ul id="errors"></ul>
+        <div>
+            <form onsubmit="Registration()" id="registrationId">
+                <div>
+                    <label for=""></label>
+                </div>        
+            </form>
+        </div>
+            
+            
+        <div>
+            <form onsubmit="LogIn()" id="logInForm">
+                <ul id="errors"></ul>
+                <div>
+                    <label for="login">Login</label>
+                    <input type="text" required name="login" id="login" />
+                </div>
+                <div>
+                    <label for="password">Password</label>
+                    <input type="password" required name="password" id="password" />
+                </div>
+                <div>
+                    <input type="reset" value="Clear" />
+                    <input type="submit" value="Log In" />
+                </div>
+            </form>
+            <div id="accountInfo"></div>
+            <hr />
+        </div>
+            
             <div>
-                <label for="login">Login</label>
-                <input type="text" required name="login" id="login" />
-            </div>
-            <div>
-                <label for="password">Password</label>
-                <input type="password" required name="password" id="password" />
-            </div>
-            <div>
-                <input type="reset" value="Clear" />
-                <input type="submit" value="Log In" />
-            </div>
-        </form>
-        <div id="accountInfo"></div>
-        <hr />
-    </div>
-
-    <div>
-        <h5>Create book</h5>
-        <form onsubmit="submitBookForm()">
-            <ul id="errors"></ul>
-            <div>
-                <label for="id">ID</label>
-                <input type="number" readonly name="id" id="id" />
-            </div>
-            <div>
-                <label for="title">Title</label>
-                <input type="text" required name="title" id="title" />
-            </div>
-            <div>
-                <label for="year">Year</label>
-                <input type="number" required name="year" id="year" />
-            </div>
-            <div>
-                <input type="reset" value="Clear" />
-                <input type="submit" value="Save" />
-            </div>
-        </form>
-    </div>
-    <hr />
+                <h5>Create book</h5>
+                <form onsubmit="submitBookForm()">
+                        <ul id="errors"></ul>
+                        <div>
+                            <label for="id">ID</label>
+                            <input type="number" readonly name="id" id="id" />
+                        </div>
+                        <div>
+                            <label for="title">Title</label>
+                            <input type="text" required name="title" id="title" />
+                        </div>
+                        <div>
+                            <label for="year">Year</label>
+                            <input type="number" required name="year" id="year" />
+                        </div>
+                        <div>
+                            <input type="reset" value="Clear" />
+                            <input type="submit" value="Save" />
+                        </div>
+                    </form>
+                </div>
+                <hr />
     <div>
         <h5>All books</h5>
         <button onclick="getAllBooks()">Show</button>
@@ -78,9 +84,10 @@
             <tbody></tbody>
         </table>
     </div>
-
+</div>
+    
     <script>
-
+        
         $(document).ready(function () {
             if (localStorage["access_token"])
             {
@@ -90,12 +97,11 @@
             }
             else {}
         });
-
-
+        
         function LogIn()
         {
             event.preventDefault();
-
+            
             $.ajax({
                 url: "http://localhost:60252/api/account/login",
                 method: "POST",
