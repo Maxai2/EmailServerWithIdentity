@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
+            crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div>
+        <h3>Site about books!</h3>
+        <hr />
+    </div>
+
+    <div>
+        <form onsubmit="LogIn()" id="logInForm">
+            <ul id="errors"></ul>
+            <div>
+                <label for="login">Login</label>
+                <input type="text" required name="login" id="login" />
+            </div>
+            <div>
+                <label for="password">Password</label>
+                <input type="password" required name="password" id="password" />
+            </div>
+            <div>
+                <input type="reset" value="Clear" />
+                <input type="submit" value="Log In" />
+            </div>
+        </form>
+        <div id="accountInfo"></div>
+        <hr />
+    </div>
+
+    <div>
+        <h5>Create book</h5>
+        <form onsubmit="submitBookForm()">
+            <ul id="errors"></ul>
+            <div>
+                <label for="id">ID</label>
+                <input type="number" readonly name="id" id="id" />
+            </div>
+            <div>
+                <label for="title">Title</label>
+                <input type="text" required name="title" id="title" />
+            </div>
+            <div>
+                <label for="year">Year</label>
+                <input type="number" required name="year" id="year" />
+            </div>
+            <div>
+                <input type="reset" value="Clear" />
+                <input type="submit" value="Save" />
+            </div>
+        </form>
+    </div>
+    <hr />
+    <div>
+        <h5>All books</h5>
+        <button onclick="getAllBooks()">Show</button>
+        <br />
+        <br />
+        <table id="books">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Year</th>
+                    <th></th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+
+        $(document).ready(function () {
+            if (localStorage["access_token"])
+            {
+                $("#logInForm").hide();
+                $("#accountInfo").append("<p>Login: " + localStorage["login"] + "</p>");
+                $("#accountInfo").append("<button onclick='logOut()'>Log Out</button>");
+            }
+            else {}
+        });
+
+
+        function LogIn()
+        {
+            event.preventDefault();
+
+            $.ajax({
+                url: "http://localhost:60252/api/account/login",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(
+                    {
+                        "login": $("#logInForm #login").val(),
+                        "password": $("#logInForm #password").val(),
+                    }),
+                success: function (data)
+                {
+                    localStorage["access_token"] = data.accessToken;
+                    localStorage["refresh_token"] = data.refreshToken;
+                    localStorage["login"] = data.login;
+                    $("#logInForm").hide();
+                    $("#accountInfo").append("<p>Login: " + localStorage["login"] + "</p>");
+                    $("#accountInfo").append("<button onclick='logOut()'>Log Out</button>");
+                },
+                error: function(data)
+                {
+                    alert('error');
+                }
+            });
+        }
+
+        function logOut()
+        {
+            $.ajax({
+                url: "http://localhost:60252/api/account/logout",
+                method: "GET",
+                contentType: "application/json",
+                headers:
+                {
+                    "Authorization": "Bearer " + localStorage["access_token"]
+                },
+                complete: function()
+                {
+                    console.log("exit");
+                    localStorage.clear();
+                    console.log(localStorage);
+                    window.location.reload();
+                }
+            });
+        }
+
+        function getAllBooks() {
+            $.ajax({
+                url: "http://localhost:60252/api/book",
+                method: "GET",
+                contentType: "application/json",
+                success: function (books) {
+                    $("#books tbody").empty();
+                    $.each(books, function (index, book) {
+                        $("#books tbody").append("<tr><td>" + book.id + "</td><td>" + book.title + "</td><td>" + book.year
+                            + "</td><td><button onclick='editBook(" + book.id + ")'>edit</button></td>"
+                            + "<td><button onclick='deleteBook(" + book.id + ")'>delete</button></td></tr>");
+                    })
+                }
+            });
+        }
+
+        function editBook(id) {
+            $.ajax({
+                url: "http://localhost:60252/api/book/" + id,
+                method: "GET",
+                contentType: "application/json",
+                success: function (book) {
+                    $("#id").val(book.id);
+                    $("#title").val(book.title);
+                    $("#year").val(book.year);
+                }
+            });
+        }
+
+        function submitBookForm() {
+            event.preventDefault();
+
+            if ($("#id").val() != '') {
+                $.ajax({
+                    url: "http://localhost:60252/api/book",
+                    method: "PUT",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        id: $("#id").val(),
+                        title: $("#title").val(),
+                        year: $("#year").val(),
+                    }),
+                    success: function (book) {
+                        $("#id").val("");
+                        $("#title").val("");
+                        $("#year").val("");
+                        getAllBooks();
+                    },
+                    statusCode: {
+                        401: function () {
+                            console.log("access token dead!");
+                            updateToken(submitBookForm);
+                        }
+                    }
+                });
+            }
+            else {
+                $.ajax({
+                    url: "http://localhost:60252/api/book",
+                    method: "POST",
+                    contentType: "application/json",
+                    data: JSON.stringify({
+                        title: $("#title").val(),
+                        year: $("#year").val(),
+                    }),
+                    success: function (book) {
+                        $("#errors").empty();
+                        $("#id").val("");
+                        $("#title").val("");
+                        $("#year").val("");
+                        getAllBooks();
+                    },
+                    statusCode: {
+                        401: function () {
+                            console.log("access token dead!");
+                            updateToken(submitBookForm);
+                        }
+                    }
+                });
+            }
+        }
+
+        function updateToken(callback) { // updateToken(editBook)
+            $.ajax({
+                url: "http://localhost:60252/api/account/token",
+                method: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(localStorage["refresh_token"]),
+                success: function (data) {
+                    localStorage["access_token"] = data.accessToken;
+                    localStorage["refresh_token"] = data.refreshToken;
+                    localStorage["login"] = data.login;
+                    callback();
+                },
+                error: function () {
+                    localStorage.clear();
+                    window.location.reload();
+                }
+            });
+        }
+
+    </script>
+</body>
+
+</html>

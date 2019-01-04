@@ -1,0 +1,21 @@
+body {
+  font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+}
+form div {
+  display: grid;
+  grid-template-columns: 100px 200px auto;
+  grid-gap: 10px;
+  margin-bottom: 10px;
+}
+table {
+  border-collapse: collapse;
+}
+table,
+td,
+th {
+  border: 1px solid gray;
+  padding: 5px;
+}
+#errors {
+  color: darkred;
+}
