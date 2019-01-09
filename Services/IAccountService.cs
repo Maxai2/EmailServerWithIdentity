@@ -1,9 +1,8 @@
 public interface IAccountService
 {
-    Registration
+    RegistrationResponse Registration(User user);
     LoginResponse LogIn(string login, string password);
     void LogOut(int id);
-    Account GetAccount(int id);
-    void SendEmail();
+    User GetAccount(int id);
     LoginResponse UpdateToken(string refreshToken);
 }
