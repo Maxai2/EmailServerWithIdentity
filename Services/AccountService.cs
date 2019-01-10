@@ -11,32 +11,20 @@ using Microsoft.AspNetCore.Mvc;
 
 public class AccountService : IAccountService
 {
-    private List<User> users;
-    private List<AccountToken> accountTokens;
+    private EmailDbContext context;
     private AuthOptions authOptions;
-
     private UserManager<User> userManager;
     private SignInManager<User> signInManager;
 
-    public AccountService(UserManager<User> userManager, SignInManager<User> signInManager)
+    public AccountService(UserManager<User> userManager, SignInManager<User> signInManager, EmailDbContext context, IOptions<AuthOptions> options)
     {
         this.userManager = userManager;
         this.signInManager = signInManager;
+        this.context = context;
+        this.authOptions = options.Value;
     }
 
-    // public AccountService(IOptions<AuthOptions> options)
-    // {
-    //     this.accounts = new List<Account>()
-    //     {
-    //         new Account() {Login = "user1", Password = "1111"},
-    //         new Account() {Login = "user2", Password = "1111"}
-    //     };
-
-    //     accountTokens = new List<AccountToken>();
-    //     authOptions = options.Value;
-    // }
-
-    public async RegistrationResponse Registration(User account)
+    public async Task<IdentityResult> Registration(User account)
     {
         var acc = Authentication(account);
 
@@ -48,29 +36,15 @@ public class AccountService : IAccountService
 
         IdentityResult res = await userManager.CreateAsync(user, account.PasswordHash);
 
-        if (res.Succeeded)
-        {
-            await signInManager.SignInAsync(user, true);
-        }
-
-        var user = new RegistrationResponse()
-        {
-            AccessToken = acc.AccessToken,
-            Email = account.Email,
-            Login = acc.Login,
-            Password = account.Password,
-            RefreshToken = acc.RefreshToken
-        };
-
-        return user;
+        return res;
     }
 
-    public User GetAccount(int id)
+    public Task<User> GetAccount(string id)
     {
-       return users.Find(a => Int32.Parse(a.Id) == id);
+       return userManager.FindByIdAsync(id);
     }
 
-    public async Task<ActionResult<LoginResponse>> LogIn(string login, string password)
+    public async Task<LoginResponse> LogIn(string login, string password)
     {
         var user = await userManager.FindByNameAsync(login);
 
@@ -83,19 +57,21 @@ public class AccountService : IAccountService
         }
         else
         {
-            return StatusCode(StatusCodes.Status401Unauthorized, "Users not found")
+            return null;
         }
     }
 
-    public async void LogOut(int id)
+    public async void LogOut(int id, string RefreshToken)
     {
-       accountTokens.RemoveAll(ac => ac.Id == id);
+       var tok = context.Tokens.Find(id, RefreshToken);
+
+       context.Tokens.Remove(tok);
        await signInManager.SignOutAsync();
     }
 
-    public LoginResponse UpdateToken(string refreshToken)
+    public async Task<LoginResponse> UpdateToken(string refreshToken)
     {
-        AccountToken accountToken = accountTokens.Find(at => at.RefreshToken == refreshToken);
+        AccountToken accountToken = context.Tokens.Find(refreshToken);
 
         if (accountToken == null)
             return null;
@@ -103,14 +79,17 @@ public class AccountService : IAccountService
         if (accountToken.Expires <= DateTime.Now)
             return null;
 
-        User user = users.Find(a => Int32.Parse(a.Id) == accountToken.Id);
+        User user = await userManager.FindByIdAsync(accountToken.Id.ToString());
 
         if (user == null)
             return null;
 
         return Authentication(user);
     }
-
+    public string GetRefreshToken(int id)
+    {
+        return context.Tokens.Find(id).RefreshToken;
+    }
     private LoginResponse Authentication(User user)
     {
         List<Claim> claims = new List<Claim>()
@@ -139,9 +118,11 @@ public class AccountService : IAccountService
             RefreshToken = Guid.NewGuid().ToString()
         };
 
-        accountTokens.RemoveAll(at => at.Id == Int32.Parse(user.Id));
+        var tok = context.Tokens.Find(user.Id);
 
-        accountTokens.Add(new AccountToken()
+        context.Tokens.Remove(tok);
+
+        context.Tokens.Add(new AccountToken()
         {
             Id = Int32.Parse(user.Id),
             Expires = DateTime.Now.AddMinutes(authOptions.RefreshLifetime),

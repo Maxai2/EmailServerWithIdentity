@@ -3,8 +3,9 @@ using System.Linq;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-[Route("api/[controller]")]
 [ApiController]
+[Route("api/[controller]")]
+[Produces("application/json")]
 public class AccountController : ControllerBase
 {
     private IAccountService accountService;
@@ -14,10 +15,28 @@ public class AccountController : ControllerBase
         this.accountService = accountService;
     }
 
+    [HttpPost("Registration")]
+    public IActionResult Registration([FromBody]RegistrationRequest model)
+    {
+        var user = new User()
+        {
+            Email = model.Email,
+            UserName = model.Login,
+            PasswordHash = model.Password
+        };
+
+        var resp = accountService.Registration(user);
+
+        if (resp == null)
+            return BadRequest(resp.Exception);
+        else
+            return Ok();
+    }
+
     [HttpPost("Login")] // api/account/login
     public IActionResult Login([FromBody]LoginRequest model)
     {
-        LoginResponse resp = accountService.LogIn(model.Login, model.Password);
+        var resp = accountService.LogIn(model.Login, model.Password);
 
         if (resp == null)
             return BadRequest();
@@ -28,7 +47,7 @@ public class AccountController : ControllerBase
     [HttpPost("Token")] // api/account/token
     public IActionResult UpdateToken([FromBody]string refreshToken)
     {
-        LoginResponse resp = accountService.UpdateToken(refreshToken);
+        var resp = accountService.UpdateToken(refreshToken);
 
         if (resp == null)
             return StatusCode(401);
@@ -45,7 +64,7 @@ public class AccountController : ControllerBase
         if (id == null)
             return NotFound();
 
-        Account acc = accountService.GetAccount(Int32.Parse(id));
+        var acc = accountService.GetAccount(id);
 
         if (acc == null)
             return NotFound();
@@ -58,11 +77,12 @@ public class AccountController : ControllerBase
     public IActionResult LogOut()
     {
         string id = HttpContext.User.Claims.FirstOrDefault(c => c.Type == "id")?.Value;
+        string refreshToken = accountService.GetRefreshToken(Int32.Parse(id));
 
         if (id == null)
             return Ok();
 
-        accountService.LogOut(Int32.Parse(id));
+        accountService.LogOut(Int32.Parse(id), refreshToken);
         return Ok();
     }
 }
