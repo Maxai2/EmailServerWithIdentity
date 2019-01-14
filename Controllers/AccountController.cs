@@ -18,28 +18,29 @@ public class AccountController : ControllerBase
     [HttpPost("Registration")]
     public IActionResult Registration([FromBody]RegistrationRequest model)
     {
-        var user = new User()
-        {
-            Email = model.Email,
-            UserName = model.Login,
-            PasswordHash = model.Password
-        };
-
-        var resp = accountService.Registration(user);
+        var resp = accountService.Registration(model.Email, model.Login, model.Password);
 
         if (resp == null)
             return BadRequest(resp.Exception);
         else
-            return Ok();
+        {
+            var res = new LoginResponse()
+            {
+                Login = (resp as LoginResponse).Login,
+
+            };
+
+            return new JsonResult(res);
+        }
     }
 
-    [HttpPost("Login")] // api/account/login
+    [HttpPost("Login")]
     public IActionResult Login([FromBody]LoginRequest model)
     {
         var resp = accountService.LogIn(model.Login, model.Password);
 
         if (resp == null)
-            return BadRequest();
+            return BadRequest(resp.Exception);
         else
             return new JsonResult(resp);
     }
@@ -50,7 +51,7 @@ public class AccountController : ControllerBase
         var resp = accountService.UpdateToken(refreshToken);
 
         if (resp == null)
-            return StatusCode(401);
+            return BadRequest(resp.Exception);
         else
             return new JsonResult(resp);
     }
@@ -67,7 +68,7 @@ public class AccountController : ControllerBase
         var acc = accountService.GetAccount(id);
 
         if (acc == null)
-            return NotFound();
+            return BadRequest(acc.Exception);
 
         return new JsonResult(acc);
     }

@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Identity;
 
 public interface IAccountService
 {
-    Task<IdentityResult> Registration(User account);
+    Task<object> Registration(string email, string login, string password);
     Task<LoginResponse> LogIn(string login, string password);
     void LogOut(int id, string RefreshToken);
     Task<User> GetAccount(string id);

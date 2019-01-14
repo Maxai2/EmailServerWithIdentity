@@ -65,11 +65,11 @@ namespace EmailServerWithIdentity
                 };
             });
 
-            // services.AddSingleton<IAccountService, AccountService>();
-            // services.AddSingleton<IBookService, BookService>();
+            services.AddTransient<IAccountService, AccountService>();
+            services.AddTransient<IEmailService, EmailService>();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            services.AddSwaggerGen(options => 
+            services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new Info
                 {
@@ -90,7 +90,7 @@ namespace EmailServerWithIdentity
             app.UseHttpsRedirection();
 
             app.UseStaticFiles();
-            
+
             app.UseAuthentication();
 
             app.UseSwagger();

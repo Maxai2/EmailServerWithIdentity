@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -24,24 +25,32 @@ public class AccountService : IAccountService
         this.authOptions = options.Value;
     }
 
-    public async Task<IdentityResult> Registration(User account)
+    public async Task<object> Registration(string email, string login, string password)
     {
-        var acc = Authentication(account);
-
         User user = new User()
         {
-            Email = account.Email,
-            UserName = account.UserName
+            Email = email,
+            UserName = login,
+            SendMailCount = 0,
+            DeleiveredMailCount = 0,
+            TodayMailCount = 0,
+            TodayMailCountLeft = 100,
+            DeliveredMailToday = 0
         };
 
-        IdentityResult res = await userManager.CreateAsync(user, account.PasswordHash);
+        var acc = Authentication(user);
+
+        IdentityResult res = await userManager.CreateAsync(user, password);
+
+        if (res.Succeeded)
+            return acc;
 
         return res;
     }
 
     public Task<User> GetAccount(string id)
     {
-       return userManager.FindByIdAsync(id);
+        return userManager.FindByIdAsync(id);
     }
 
     public async Task<LoginResponse> LogIn(string login, string password)
@@ -63,10 +72,11 @@ public class AccountService : IAccountService
 
     public async void LogOut(int id, string RefreshToken)
     {
-       var tok = context.Tokens.Find(id, RefreshToken);
+        var tok = context.Tokens.Find(id, RefreshToken);
 
-       context.Tokens.Remove(tok);
-       await signInManager.SignOutAsync();
+        context.Tokens.Remove(tok);
+        context.SaveChanges();
+        await signInManager.SignOutAsync();
     }
 
     public async Task<LoginResponse> UpdateToken(string refreshToken)
@@ -90,6 +100,7 @@ public class AccountService : IAccountService
     {
         return context.Tokens.Find(id).RefreshToken;
     }
+
     private LoginResponse Authentication(User user)
     {
         List<Claim> claims = new List<Claim>()
@@ -118,16 +129,21 @@ public class AccountService : IAccountService
             RefreshToken = Guid.NewGuid().ToString()
         };
 
-        var tok = context.Tokens.Find(user.Id);
+        var tok = context.Tokens.Where(t => t.User.Id == user.Id).FirstOrDefault();
 
-        context.Tokens.Remove(tok);
+        if (tok != null)
+        {
+            context.Tokens.Remove(tok);
+        }
 
         context.Tokens.Add(new AccountToken()
         {
-            Id = Int32.Parse(user.Id),
             Expires = DateTime.Now.AddMinutes(authOptions.RefreshLifetime),
-            RefreshToken = resp.RefreshToken
+            RefreshToken = resp.RefreshToken,
+            User = user
         });
+
+        context.SaveChanges();
 
         return resp;
     }

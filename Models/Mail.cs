@@ -5,6 +5,7 @@ public class Mail
 {
     [Required]
     public int Id { get; set; }
+    public string MailAddress { get; set; }
     [Required]
     public string MailText { get; set; }
     [Required]
