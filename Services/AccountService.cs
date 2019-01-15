@@ -9,7 +9,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-
 public class AccountService : IAccountService
 {
     private EmailDbContext context;
@@ -25,7 +24,7 @@ public class AccountService : IAccountService
         this.authOptions = options.Value;
     }
 
-    public async Task<object> Registration(string email, string login, string password)
+    public async Task<LoginResponse> Registration(string email, string login, string password)
     {
         User user = new User()
         {
@@ -43,9 +42,21 @@ public class AccountService : IAccountService
         IdentityResult res = await userManager.CreateAsync(user, password);
 
         if (res.Succeeded)
-            return acc;
+        {
+            var result = new LoginResponse()
+            {
+                AccessToken = acc.AccessToken,
+                //ExceptionList = res.Errors,
+                Login = acc.Login,
+                RefreshToken = acc.RefreshToken
+            };
 
-        return res;
+            return  result;
+        }
+        else
+        {
+            throw new CustomException(res.Errors);
+        }
     }
 
     public Task<User> GetAccount(string id)

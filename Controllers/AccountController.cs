@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -16,21 +17,17 @@ public class AccountController : ControllerBase
     }
 
     [HttpPost("Registration")]
-    public IActionResult Registration([FromBody]RegistrationRequest model)
+    public async Task<IActionResult> Registration([FromBody]RegistrationRequest model)
     {
-        var resp = accountService.Registration(model.Email, model.Login, model.Password);
-
-        if (resp == null)
-            return BadRequest(resp.Exception);
-        else
+        try
         {
-            var res = new LoginResponse()
-            {
-                Login = (resp as LoginResponse).Login,
+            var resp = await accountService.Registration(model.Email, model.Login, model.Password);
 
-            };
-
-            return new JsonResult(res);
+            return new JsonResult(resp);
+        }
+        catch (CustomException ex)
+        {
+            return BadRequest(ex.ListErrors);
         }
     }
 

@@ -69,6 +69,13 @@ namespace EmailServerWithIdentity
             services.AddTransient<IEmailService, EmailService>();
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
+            services.Configure<IdentityOptions>(opts =>
+            {
+                opts.Password.RequiredLength = 5;
+                opts.Password.RequiredUniqueChars = 4;
+                opts.Password.RequireNonAlphanumeric = false;
+            });
+
             services.AddSwaggerGen(options =>
             {
                 options.SwaggerDoc("v1", new Info
